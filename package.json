@@ -1,0 +1,9 @@
+{
+	"name": "trinity",
+	"version": "0.0.1",
+	"author": "Jake Verbaten <raynos2@gmail.com>",
+	"main": "src/trinity",
+	"engines": {
+		"node": "0.5.x"
+	}
+}
