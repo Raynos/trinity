@@ -2,7 +2,7 @@ var after = require("after"),
 	error = require("error"),
 	fs = require("fs"),
 	pd = require("pd"),
-	Stack = require("stack"),
+	Stack = require("stak"),
 	path = require("path");
 
 var loadStack = (function () {
