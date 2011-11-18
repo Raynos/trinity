@@ -1,15 +1,12 @@
 {
 	"name": "trinity",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"author": "Jake Verbaten <raynos2@gmail.com>",
 	"main": "src/trinity",
-	"dependencies": {
-		"stak": "0.0.2",
-		"error": "0.0.1",
-		"after": "0.1.6",
-		"pd": "0.2.1"
+	"devDependencies": {
+		"nodeunit": "0.6.2"
 	},
 	"engines": {
-		"node": "0.5.x"
+		"node": "0.6.x"
 	}
 }
