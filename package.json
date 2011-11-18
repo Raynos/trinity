@@ -3,6 +3,9 @@
 	"version": "0.1.0",
 	"author": "Jake Verbaten <raynos2@gmail.com>",
 	"main": "src/trinity",
+	"dependencies": {
+		"jsdom": "0.2.9"
+	},
 	"devDependencies": {
 		"nodeunit": "0.6.2"
 	},

@@ -28,6 +28,9 @@ Heavy work in progress!
 	};
 
 	// main.js
+	var trinity = require("trinity");
+	trinity.config("path", __dirname + "/public/trinity/");
+
 	app.get("/", function (req, res) {
 		res.render("base", { text: "win" });
 	});
@@ -45,21 +48,44 @@ Doesn't [plates][2] already solve this? Plates makes you dump hooks in your HTML
 
 ## trinity(uri, data, cb)
 
-Trinity takes an uri to a HTML resource, a data object and a callback. It will then load the HTML at the uri as a fragment and pass it to the JS at the uri.
+Trinity takes an uri to a HTML resource, a data object and a callback. 
+
+It creates a Document based on Static.x
+
+It will then load the HTML at the uri as a fragment and pass it to the JS at the uri.
 
 The javascript file at the uri takes a format of 
 
 `module.exports = function (domFragment, data, load) { };`
 
-The domFragment is created from the HTML at the uri, the data was passed in to the outer trinity function and the 3rd parameter is the inner trinity.
+## load(uri, data, cb)
 
 The load function has the same format as the trinity and can be called to load more HTML/CSS/JS documents as document fragments.
 
-The cb parameter takes a format of (domFragment, data, load) just like the js function.
+Load does not create a Document based on static.x
+
+The cb parameter takes a format of (error, domFragment, load)
 
 ## static.x
 
-Trinity allows you to define a static html / css / js file. These will be loaded by the trinity function. The intend is that the static HTML is your master page, and that the static CSS / JS are your bundled & minified production js files.
+Trinity allows you to define a static html / css / js file. These will be loaded by the trinity function. 
+
+The intend is that the static HTML is your master page, and that the static CSS / JS are your bundled & minified production js files.
+
+The HTML that is created for you is the static html page with two extra nodes, a script node pointing at static.js and a style node pointing at static.css
+
+## trinity.config
+
+You can configure some variables.
+
+
+{
+	static: name of static file, default is "static",
+	publicPath: the public folder path to your trinity templates, the default is 
+		"trinity". This means that a request to /static.css becomes trinity/static.css
+	path: the path to your trinity folder. For example __dirname + "/trinity/". It has no
+		default.
+}
 
 # installation
 
