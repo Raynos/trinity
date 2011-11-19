@@ -4,6 +4,12 @@ A simple templating mechanism, that keeps the purity of HTML, CSS & JS.
 
 Heavy work in progress!
 
+## RoadMap:
+
+- Express engine support
+- client support
+- replace jsdom with a super fast, super light weight DOM4 implementation
+
 # Example
 
 	// base.html
@@ -24,6 +30,16 @@ Heavy work in progress!
 	// base.js
 	var p = frag.getElementsByClassName("container")[0];
 	p.nodeValue = data.text;
+	load("child", data, function (error, fragment) {
+		var div = frag.firstChild;
+		div.appendChild(fragment);
+	});
+
+	// child.html
+	<p></p>
+
+	// child.js
+	frag.firstChild.textContent = "Another p that was loaded!";
 
 	// main.js
 	var trinity = require("trinity");
@@ -39,6 +55,7 @@ Heavy work in progress!
  - Works on server & client
  - Uses the DOM API everyone knows and loves
  - Really simple API
+ - Recursively loading and manipulating more DOM fragments
 
 Doesn't [plates][2] already solve this? Plates makes you dump hooks in your HTML to bind data too. This breaks seperations of concerns. Plates also doesn't let you organize your code into trinities of HTML/CSS/JS that you can inherit and mix & match.
 
