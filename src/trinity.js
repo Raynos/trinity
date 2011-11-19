@@ -1,14 +1,13 @@
 var jsdom = require("jsdom"),
 	http = require("http"),
-	vm = require("vm"),
+	path = require("path"),
+	burrito = require("burrito")
 	fs = require("fs");
 
 var config = {
 	"static": "static",
 	"publicPath": "trinity"
 };
-
-var bodyRegExp = /\{(.+?)\}+$/;
 
 /*
 	adoptNode implements the DOM4 node adoption algorithm.
@@ -33,18 +32,72 @@ var adoptNode = (function () {
 	return adoptNode;
 }());
 
+var cachedRead = (function () {
+	var cache = {};
+
+	function readFile(name, cb) {
+		var file = cache[name];
+		if (file) {
+			return cb(null, file);
+		}
+
+		fs.readFile(name, function (err, file) {
+			if (file) cache[name] = file;
+			cb.apply(this, arguments);
+		});
+	}
+
+	return readFile;
+})();
+
 /*
 	Constucts a trinity object
 */
 var Trinity = {
 	/*
+		calls create on CSS, JS and HTML.
+
+		@param String uri - trinity to load
+		@param Function cb<Error> - callback to fire when finished
+		@param optional Boolean sync - sync flag as to whether 
+			the operation should be	synchronous
+	*/
+	create: function _create(uri, cb, sync) {
+		var count = 3;
+
+		function next() {
+			count--;
+			count === 0 && cb(null);
+		}
+
+		function errorHandler(err, func) {
+			err ? cb(err) : next();
+		}
+
+		function swallowFileDoesNotExist(err, func) {
+			if (err && err.message.indexOf("No such file") === -1) {
+				return cb(err);
+			}
+			next();
+		}
+
+		this.createJavaScript(uri, swallowFileDoesNotExist, sync)
+		
+		this.createDocumentFragment(uri, errorHandler, sync);
+
+		this.createCSS(uri, swallowFileDoesNotExist, sync);
+	},
+	/*
 		adds the css text to the cssNode
 
 		@param String uri - file to load
 		@param Function cb<Error, CSSText> - callback to fire when finished
+		@param optional Boolean sync - sync flag as to whether 
+			the operation should be	synchronous
 	*/
-	createCSS: function _createCSS(uri, cb) {
-		var that = this;
+	createCSS: function _createCSS(uri, cb, sync) {
+		var that = this,
+			url = path.join(config.path,uri) + ".css";
 
 		function readFile(error, file) {
 			if (error) return cb(error);
@@ -52,8 +105,8 @@ var Trinity = {
 			that.cssNode.textContent += file;
 			cb(null, file);
 		}
-		
-		fs.readFile(config.path + uri + ".css", readFile);	
+
+		this.readFile(url, readFile, sync);
 	},
 	/*
 		creates a document fragment from the html at the ui
@@ -61,9 +114,12 @@ var Trinity = {
 		@param String uri - file to load
 		@param Function cb<Error, DocumentFragment> - callback to fire 
 			when loaded. Get's passed the document fragment build from the HTML
+		@param optional Boolean sync - sync flag as to whether 
+			the operation should be	synchronous
 	*/
-	createDocumentFragment: function _createDocumentFragment(uri, cb) {
-		var that = this;
+	createDocumentFragment: function _createDocumentFragment(uri, cb, sync) {
+		var that = this,
+			url = path.join(config.path, uri) + ".html";
 
 		function readFile(error, file) {
 			if (error) return cb(error);
@@ -81,8 +137,8 @@ var Trinity = {
 
 			cb(null, fragment);
 		}
-	
-		fs.readFile(config.path + uri + ".html", readFile);
+
+		this.readFile(url, readFile, sync);
 	},
 	/*
 		loads the javascript file at the uri
@@ -90,20 +146,25 @@ var Trinity = {
 		@param String uri - file to load
 		@param Function cb<Error, Function> - callback to fire when loaded. 
 			get's passed the function f created	from the files source code
+		@param optional Boolean sync - sync flag as to whether 
+			the operation should be	synchronous
 	*/
-	createJavaScript: function _loadJavaScript(uri, cb) {
-		var that = this;
-
+	createJavaScript: function _loadJavaScript(uri, cb, sync) {
+		var that = this,
+			url = path.join(config.path, uri) + ".js";
+		
 		function readFile(err, file) {
 			if (err) return cb(err);
 
-			var f = Function("frag", "data", "load", file);
-			that.func = f;
+			that.preload(file, function _finish() {
+				var f = Function("frag", "data", "load", file);
+				that.func = f;
 
-			cb(null, f);
+				cb(null, f);
+			});			
 		}
 
-		fs.readFile(config.path + uri + ".js", readFile);
+		this.readFile(url, readFile, sync);
 	},
 	/*
 		Make a new Trinity
@@ -119,6 +180,71 @@ var Trinity = {
 		t.doc = doc;
 		t.cssNode = cssNode;
 		return t;
+	},
+	/*
+		preload a trinity
+
+		@param String file - file to read. Any load("module") calls should
+			be extracted and the trinity "module" should be preloaded.
+			Works recursively
+		@param Function cb - callback to invoke when done
+	*/
+	preload: function _preload(file, cb) {
+		var that = this,
+			modules = [];
+
+		burrito(file, function (node) {
+			if (node.name === "call" &&
+				node.label() === "load"
+			) {
+				var module = node.value[1][0][1];
+				modules.push(module);
+			}
+		});
+
+		var count = modules.length * 3 + 1;
+
+		function next() {
+			count--;
+			count === 0 && cb();
+		}
+
+		function recurseForJavaScript(err, file) {
+			if (file) {
+				that.preload(file, next);
+			} else {
+				next();
+			}
+		}
+
+		modules.forEach(function (module) {
+			var url = path.join(config.path, module);
+			cachedRead(url + ".js", recurseForJavaScript);
+			cachedRead(url + ".css", next);
+			cachedRead(url + ".html", next);
+		});
+
+		next();
+	},
+	/*
+		readFile Utility
+
+		@param String url - url to read
+		@param Function cb<Error, File> - callback to fire on reading
+		@param Boolean sync - whether to use sync method
+	*/
+	readFile: function _readFile(url, cb, sync) {
+		if (!sync) {
+			cachedRead(url, cb);
+		} else {
+			var file, err = null;
+			try {
+				file = fs.readFileSync(url);
+			} catch (e) {
+				err = e;
+			}
+			cb(err, file);
+		}
 	}
 };
 
@@ -132,15 +258,14 @@ var Trinity = {
 	@param Function cb<Error, DocumentFragment, Function> -
 		callback to invoke when ready, passes the document fragment
 		and another load function to invoke
-	@param optional Function out - an out function to call
-		in recursive calls to load. This allows you to finish outer
-		load calls only when inner load calls finish.
+	@param optional Boolean sync - sync flag as to whether 
+			the operation should be	synchronous
 */
-function load(doc, cssNode, uri, json, cb, out) {
+function load(doc, cssNode, uri, json, cb, sync) {
 	var that = this,
 		trinity = Trinity.make(doc, cssNode),
 		_load = load.bind(null, doc, cssNode),
-		count = 3;
+		count = 0;
 
 	/*
 		When all javascript, documentfragment and css have been created
@@ -151,52 +276,27 @@ function load(doc, cssNode, uri, json, cb, out) {
 		We use a load proxy to ensure that this "load" only finishes after the 
 		load we proxy finishes.
 	*/
-	function next() {
-		--count;
-		if (count === 0) {
+	function next(err) {
+		if (err) return cb(err);
 
-			var func = trinity.func,
-				frag = trinity.frag;
+		var func = trinity.func,
+			frag = trinity.frag;
 
-			func && func(frag, json, function _loadProxy(uri, json, cb) {
-				count++;
-				_load(uri, json, function _callbackProxy() {
-					cb.apply(this, arguments);
-					finish();
-				});
-			});
+		func && func(frag, json, function _loadProxy(uri, json) {
+			var ret;
+			console.log("start");
+			_load(uri, json, function (err, frag) {
+				console.log("middle");
+				ret = frag;
+			}, true);
+			console.log("end");
+			return ret;
+		});
 
-			count++;
-			finish();
-		}
+		cb(null, trinity.frag, _load);	
 	}
 
-	/*
-		Loading has finished, return the fragment
-	*/
-	function finish() {
-		--count;
-		if (count === 0) {
-			cb(null, trinity.frag, _load);	
-		}	
-	}
-
-	function errorHandler(err, func) {
-		err ? cb(err) : next();
-	}
-
-	function swallowFileDoesNotExist(err, func) {
-		if (err && err.message.indexOf("No such file") === -1) {
-			return cb(err);
-		}
-		next();
-	}
-
-	trinity.createJavaScript(uri, swallowFileDoesNotExist)
-	
-	trinity.createDocumentFragment(uri, errorHandler);
-
-	trinity.createCSS(uri, swallowFileDoesNotExist);
+	trinity.create(uri, next, sync);
 }
 
 	
@@ -220,7 +320,7 @@ var Statics = {
 		var script = this.doc.createElement("script");
 		script.type = "text/javascript";
 		script.src = config.publicPath + "/" + config.static + ".js";
-		this.doc.head.appendChild(script);	
+		this.doc.body.appendChild(script);	
 	},
 	/*
 		adds an empty CSS node to dump CSS into
@@ -284,7 +384,7 @@ function trinity(module, json, cb) {
 		json = null;
 	}
 
-	Statics.load(module, json, cb);
+	Object.create(Statics).load(module, json, cb);
 };
 
 trinity.Statics = Statics;

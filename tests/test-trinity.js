@@ -92,7 +92,7 @@ module.exports = {
 		test.expect(1);
 		trinity("test", {}, function (error, docfrag, load) {
 			var doc = docfrag.ownerDocument;
-			var children = [].slice.call(doc.head.childNodes);
+			var children = [].slice.call(doc.body.childNodes);
 			test.ok(children.some(function (node) {
 				return node.tagName === "SCRIPT" &&
 					node.src === "trinity/static.js";
