@@ -37,6 +37,12 @@ var adoptNode = (function () {
 	Constucts a trinity object
 */
 var Trinity = {
+	/*
+		adds the css text to the cssNode
+
+		@param String uri - file to load
+		@param Function cb<Error, CSSText> - callback to fire when finished
+	*/
 	createCSS: function _createCSS(uri, cb) {
 		var that = this;
 
@@ -136,6 +142,15 @@ function load(doc, cssNode, uri, json, cb, out) {
 		_load = load.bind(null, doc, cssNode),
 		count = 3;
 
+	/*
+		When all javascript, documentfragment and css have been created
+		The next block gets invoked
+
+		Here we simply invoke the function and call finish.
+
+		We use a load proxy to ensure that this "load" only finishes after the 
+		load we proxy finishes.
+	*/
 	function next() {
 		--count;
 		if (count === 0) {
@@ -156,6 +171,9 @@ function load(doc, cssNode, uri, json, cb, out) {
 		}
 	}
 
+	/*
+		Loading has finished, return the fragment
+	*/
 	function finish() {
 		--count;
 		if (count === 0) {
