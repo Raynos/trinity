@@ -20,6 +20,8 @@ Heavy work in progress!
 	  <p class="container"></p>
 	</div>
 
+
+
 	// base.css
 	p {
 		color: blue
@@ -29,6 +31,8 @@ Heavy work in progress!
 		color: red
 	}
 
+
+
 	// base.js
 	var p = frag.firstChild.getElementsByClassName("container")[0];
 	p.textContent = data.text;
@@ -37,11 +41,17 @@ Heavy work in progress!
 		div.appendChild(fragment);
 	});
 
+
+
 	// child.html
 	<p></p>
 
+
+
 	// child.js
 	frag.firstChild.textContent = "Another p that was loaded!";
+
+
 
 	// server.js
 	var express = require("express"),
@@ -60,7 +70,7 @@ Heavy work in progress!
 
 # Motivation
 
- - [Seperations of concerns][1]. All templating engines break them by putting logic in your views
+ - [Seperations of concerns][1]. Most templates don't split HTML and view logic
  - Works on server & client
  - Uses the DOM API everyone knows and loves
  - Really simple API
