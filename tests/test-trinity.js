@@ -162,7 +162,7 @@ module.exports = {
 	},
 	"use trinity.load directly": function (test) {
 		test.expect(3);
-		trinity.load("test", {}, function (err, docfrag, load) {
+		trinity.load(undefined, {}, "test", {}, function (err, docfrag, load) {
 			test.ok(docfrag);
 			test.ok(docfrag.firstChild);
 			test.ok(docfrag.childNodes[1].tagName === "DIV");

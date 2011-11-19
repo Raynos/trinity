@@ -6,7 +6,6 @@ Heavy work in progress!
 
 ## RoadMap:
 
-- Express engine support
 - client support
 - replace jsdom with a super fast, super light weight DOM4 implementation
 
@@ -48,7 +47,7 @@ Another HTML template, this is a small shell
 	// child.html
 	<p></p>
 
-ANother piece of view logic
+Another piece of view logic
 
 	// child.js
 	frag.firstChild.textContent = "Another p that was loaded!";

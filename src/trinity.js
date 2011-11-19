@@ -34,26 +34,20 @@ var adoptNode = (function () {
 }());
 
 /*
-	Loader is a small wrapper around loading a single trinity.
+	Constucts a trinity object
 */
-var Loader = {
-	/*
-		loads the javascript file at the uri
+var Trinity = {
+	createCSS: function _createCSS(uri, cb) {
+		var that = this;
 
-		@param String uri - file to load
-		@param Function cb<Error, Function> - callback to fire when loaded. 
-			get's passed the function f created	from the files source code
-	*/
-	loadJavaScript: function _loadJavaScript(uri, cb) {
-		var path = config.path + uri + ".js";
+		function readFile(error, file) {
+			if (error) return cb(error);
 
-		function readFile(err, file) {
-			if (err) return cb(err);
-			var f = Function("frag", "data", "load", file);
-			cb(null, f);
+			that.cssNode.textContent += file;
+			cb(null, file);
 		}
-
-		fs.readFile(path, readFile);
+		
+		fs.readFile(config.path + uri + ".css", readFile);	
 	},
 	/*
 		creates a document fragment from the html at the ui
@@ -67,103 +61,131 @@ var Loader = {
 
 		function readFile(error, file) {
 			if (error) return cb(error);
+
 			var doc = jsdom.jsdom(file);
 			if (!that.doc) that.doc = doc;
+
 			var fragment = doc.createDocumentFragment();
 			[].forEach.call(doc.childNodes, function (node) {
 				fragment.appendChild(node);
 			});
+			adoptNode(fragment, that.doc);
+
+			that.frag = fragment;
+
 			cb(null, fragment);
 		}
 	
 		fs.readFile(config.path + uri + ".html", readFile);
 	},
 	/*
-		Make a new loader
+		loads the javascript file at the uri
 
-		@param Document doc - the html document the dom fragment that is loaded
-			should belong to
-		@param Node cssNode - a Style node to append CSS strings to
+		@param String uri - file to load
+		@param Function cb<Error, Function> - callback to fire when loaded. 
+			get's passed the function f created	from the files source code
 	*/
-	make: function _make(doc, cssNode) {
-		var l = Object.create(Loader);
-		l.doc = doc;
-		l.cssNode = cssNode;
-		return l;
+	createJavaScript: function _loadJavaScript(uri, cb) {
+		var that = this;
+
+		function readFile(err, file) {
+			if (err) return cb(err);
+
+			var f = Function("frag", "data", "load", file);
+			that.func = f;
+
+			cb(null, f);
+		}
+
+		fs.readFile(config.path + uri + ".js", readFile);
 	},
 	/*
-		Load a trinity
+		Make a new Trinity
 
-		@param String uri - trinity to load
-		@param Object json - json data to pass to the JS file
-		@param Function cb<Error, DocumentFragment, Function> -
-			callback to invoke when ready, passes the document fragment
-			and another load function to invoke
-		@param optional Function out - an out function to call
-			in recursive calls to load. This allows you to finish outer
-			load calls only when inner load calls finish.
+		@param Loader loader - the loader attached to the trinity object
+		@param Document doc - the document that the trinity belongs to
+		@param Node cssNode - a Style node to append CSS strings to
+
+		@return Trinity
 	*/
-	load: function _load(uri, json, cb, out) {
-		var that = this,
-			loader = Loader.make(this.doc, this.cssNode),
-			_load = loader.load.bind(loader),
-			count = 2;
-
-		function next() {
-			--count;
-			if (count === 0) {
-				cb(null, that.frag, _load);
-				out && out();
-			}
-		}
-
-		function handleFrag(error, obj) {
-			that.frag = obj;
-			if (error) {
-				return cb(error);
-			}
-			adoptNode(obj, that.doc);
-			that.loadJavaScript(uri, function (err, func) {
-				if (err && err.message.indexOf("No such file") === -1) {
-					return cb(err);
-				}
-				if (func) {
-					var loadCalled = false;
-					func(that.frag, json, function (uri, data, cb) {
-						loadCalled = true;
-						loader.load(uri, data, cb, next);
-					});	
-					if (!loadCalled) {
-						next();
-					}
-				} else {
-					next();
-				}
-			});
-		}
-
-		function readCSS(err, css) {
-			if (err && err.message.indexOf("No such file") === -1) {
-				return cb(error);
-			}
-			if (css && that.cssNode) {
-				that.cssNode.textContent += css;	
-			}
-			next();
-		}
-		
-		// load html into fragment
-		this.createDocumentFragment(uri, handleFrag);
-
-		fs.readFile(config.path + uri + ".css", readCSS);
+	make: function _make(doc, cssNode) {
+		var t = Object.create(Trinity);
+		t.doc = doc;
+		t.cssNode = cssNode;
+		return t;
 	}
 };
+
+/*
+	Load a trinity
+
+	@param Document doc - doc to bind the trinity to
+	@param Node cssNode - css node to add css text to
+	@param String uri - trinity to load
+	@param Object json - json data to pass to the JS file
+	@param Function cb<Error, DocumentFragment, Function> -
+		callback to invoke when ready, passes the document fragment
+		and another load function to invoke
+	@param optional Function out - an out function to call
+		in recursive calls to load. This allows you to finish outer
+		load calls only when inner load calls finish.
+*/
+function load(doc, cssNode, uri, json, cb, out) {
+	var that = this,
+		trinity = Trinity.make(doc, cssNode),
+		_load = load.bind(null, doc, cssNode),
+		count = 3;
+
+	function next() {
+		--count;
+		if (count === 0) {
+
+			var func = trinity.func,
+				frag = trinity.frag;
+
+			func && func(frag, json, function _loadProxy(uri, json, cb) {
+				count++;
+				_load(uri, json, function _callbackProxy() {
+					cb.apply(this, arguments);
+					finish();
+				});
+			});
+
+			count++;
+			finish();
+		}
+	}
+
+	function finish() {
+		--count;
+		if (count === 0) {
+			cb(null, trinity.frag, _load);	
+		}	
+	}
+
+	function errorHandler(err, func) {
+		err ? cb(err) : next();
+	}
+
+	function swallowFileDoesNotExist(err, func) {
+		if (err && err.message.indexOf("No such file") === -1) {
+			return cb(err);
+		}
+		next();
+	}
+
+	trinity.createJavaScript(uri, swallowFileDoesNotExist)
+	
+	trinity.createDocumentFragment(uri, errorHandler);
+
+	trinity.createCSS(uri, swallowFileDoesNotExist);
+}
+
 	
 /*
-	Trinity object, thin wrapper around a loader but also builds
-	a static Document.
+	Wraps a Trinity object in statics
 */
-var Trinity = {
+var Statics = {
 	/*
 		adds a static CSS node
 	*/
@@ -218,7 +240,7 @@ var Trinity = {
 
 			that.addEmptyCSSNode();
 
-			Loader.make(that.doc, that.cssNode).load(uri, json, cb);
+			load(that.doc, that.cssNode, uri, json, cb);
 		}
 
 		// load static.html
@@ -244,11 +266,12 @@ function trinity(module, json, cb) {
 		json = null;
 	}
 
-	Trinity.load(module, json, cb);
+	Statics.load(module, json, cb);
 };
 
+trinity.Statics = Statics;
 trinity.Trinity = Trinity;
-trinity.Loader = Loader;
+trinity.load = load;
 
 /*
 	set config values
@@ -258,22 +281,6 @@ trinity.Loader = Loader;
 */
 trinity.set = function _set(name, val) {
 	config[name] = val;
-};
-
-/*
-	Invoke load directly on a new loader object.
-
-	Bunch of weird edge cases
-
-	@param String uri - uri of trinity to load
-	@param Object json - json data to pass to JS file of the trinity
-	@param Function cb<Error, DocumentFragment, Load> - callback is 
-		to be invoked when the document has loaded. Returns the
-		document fragment from the Loader.load call and also returns
-		another load function
-*/
-trinity.load = function _load(uri, json, cb) {
-	Loader.make().load(uri, json, cb);
 };
 
 trinity.punchExpress = function _punchExpress() {
