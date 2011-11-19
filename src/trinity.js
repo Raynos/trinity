@@ -32,6 +32,12 @@ var adoptNode = (function () {
 	return adoptNode;
 }());
 
+/*
+	cachedRead, like fs.readFile but cached
+
+	@param String name - file uri to read
+	@param Function cb<Error, File> - callback to invoke with file
+*/
 var cachedRead = (function () {
 	var cache = {};
 
@@ -273,8 +279,8 @@ function load(doc, cssNode, uri, json, cb, sync) {
 
 		Here we simply invoke the function and call finish.
 
-		We use a load proxy to ensure that this "load" only finishes after the 
-		load we proxy finishes.
+		We use a load proxy to ensure that the passed load function does
+		blocking loads
 	*/
 	function next(err) {
 		if (err) return cb(err);
@@ -282,14 +288,12 @@ function load(doc, cssNode, uri, json, cb, sync) {
 		var func = trinity.func,
 			frag = trinity.frag;
 
+		// intercept load, make a blocking load and return the domfrag
 		func && func(frag, json, function _loadProxy(uri, json) {
 			var ret;
-			console.log("start");
-			_load(uri, json, function (err, frag) {
-				console.log("middle");
+			_load(uri, json, function _callbackProxy(err, frag) {
 				ret = frag;
 			}, true);
-			console.log("end");
 			return ret;
 		});
 

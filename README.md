@@ -37,10 +37,9 @@ Your view logic, using plain old DOM
 	// base.js
 	var p = frag.firstChild.getElementsByClassName("container")[0];
 	p.textContent = data.text;
-	load("child", data, function (error, fragment) {
-		var div = frag.firstChild;
-		div.appendChild(fragment);
-	});
+	var fragment = load("child", data);
+	var div = frag.firstChild;
+	div.appendChild(fragment);
 
 Another HTML template, this is a small shell
 
@@ -93,7 +92,8 @@ The javascript file at the uri get's 3 "globals" injected into it.
 
  - `frag` The documentfragment build of the HTML 
  - `data` The data object passed into trinity
- - `load` The load function as defined below
+ - `load` A blocking load function, takes `(uri, data)` as paramaters 
+ 		and returns a documentfragment
 
 The CSS file at the uri is string appended to a single CSS node in `<head>`.
 
@@ -105,7 +105,9 @@ The load function has the same format as the trinity and can be called to load m
 
 Load does not create a Document based on static.x
 
-The cb parameter takes a format of (error, domFragment, load)
+The cb parameter takes a format of `(error, domFragment)`
+
+Inside the JS files of a trinity the `load` function is blocking and takes `(uri, data)` as parameters and returns the document fragment.
 
 ## static.x
 
@@ -137,13 +139,11 @@ Only works nicely if static.html defines a `<body></body>` and all your trinitie
 
 ## trinity.load (Experts only)
 
-You can call the load function directly. Note this means that the CSS doesn't get appended anywhere and that the document fragment has a generic default document as ownerDocument.
+You can call the load function directly.
 
-Should only be used with HTML & JS. You also have to call adoptNode on the entire document fragment to get it into the correct document.
+## trinity.Statics (Experts only)
 
-## trinity.Loader (Experts only)
-
-The Loader object, have fun duck punching it
+The Statics object, have fun duck punching it
 
 ## trinity.Trinity (Experts only)
 
