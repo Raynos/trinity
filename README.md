@@ -14,13 +14,15 @@ Heavy work in progress!
 
 [Simple example][3]
 
+Your HTML template
+
 	// base.html
 	<div>
 	  <p> Some content </p>
 	  <p class="container"></p>
 	</div>
 
-
+The associated CSS. This is a nice place to put your CSS, all the CSS will be minified for you
 
 	// base.css
 	p {
@@ -31,7 +33,7 @@ Heavy work in progress!
 		color: red
 	}
 
-
+Your view logic, using plain old DOM
 
 	// base.js
 	var p = frag.firstChild.getElementsByClassName("container")[0];
@@ -41,17 +43,17 @@ Heavy work in progress!
 		div.appendChild(fragment);
 	});
 
-
+Another HTML template, this is a small shell
 
 	// child.html
 	<p></p>
 
-
+ANother piece of view logic
 
 	// child.js
 	frag.firstChild.textContent = "Another p that was loaded!";
 
-
+The express server
 
 	// server.js
 	var express = require("express"),
