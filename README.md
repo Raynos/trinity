@@ -69,9 +69,13 @@ It creates a Document based on Static.x
 
 It will then load the HTML at the uri as a fragment and pass it to the JS at the uri.
 
-The javascript file at the uri get's 3 "globals" injected into it. `frag`, `data` and `load`
+The javascript file at the uri get's 3 "globals" injected into it. 
 
-The CSS file at the uri is string appended to a single CSS node in <head>.
+ - `frag` The documentfragment build of the HTML 
+ - `data` The data object passed into trinity
+ - `load` The load function as defined below
+
+The CSS file at the uri is string appended to a single CSS node in `<head>`.
 
 The cb is of format `(error, domFragment, load)`
 
