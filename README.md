@@ -78,6 +78,12 @@ The HTML that is created for you is the static html page with two extra nodes, a
 
 You can configure some variables.
 
+## trinity.load (Experts only)
+
+You can call the load function directly. Note this means that the CSS doesn't get appended anywhere and that the document fragment has a generic default document as ownerDocument.
+
+Should only be used with HTML & JS. You also have to call adoptNode on the entire document fragment to get it into the correct document.
+
 
 {
 	static: name of static file, default is "static",

@@ -41,9 +41,12 @@ var Loader = {
 		fs.readFile(path, readFile);
 	},
 	createDocumentFragment: function _createDocumentFragment(uri, cb) {
+		var that = this;
+		
 		function readFile(error, file) {
 			if (error) return cb(error);
 			var doc = jsdom.jsdom(file);
+			if (!that.doc) that.doc = doc;
 			var fragment = doc.createDocumentFragment();
 			[].forEach.call(doc.childNodes, function (node) {
 				fragment.appendChild(node);
@@ -103,7 +106,7 @@ var Loader = {
 			if (err && err.message.indexOf("No such file") === -1) {
 				return cb(error);
 			}
-			if (css) {
+			if (css && that.cssNode) {
 				that.cssNode.textContent += css;	
 			}
 			next();
@@ -174,6 +177,10 @@ function trinity(module, json, cb) {
 
 trinity.set = function (name, val) {
 	config[name] = val;
+};
+
+trinity.load = function (uri, json, cb) {
+	Loader.make().load(uri, json, cb);
 };
 
 
