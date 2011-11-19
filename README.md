@@ -99,20 +99,19 @@ The HTML that is created for you is the static html page with two extra nodes, a
 
 You can configure some variables.
 
+	{
+		static: name of static file, default is "static",
+		publicPath: the public folder path to your trinity templates, the default is 
+			"trinity". This means that a request to /static.css becomes trinity/static.css
+		path: the path to your trinity folder. For example __dirname + "/trinity/". It has no
+			default.
+	}
+
 ## trinity.load (Experts only)
 
 You can call the load function directly. Note this means that the CSS doesn't get appended anywhere and that the document fragment has a generic default document as ownerDocument.
 
 Should only be used with HTML & JS. You also have to call adoptNode on the entire document fragment to get it into the correct document.
-
-
-{
-	static: name of static file, default is "static",
-	publicPath: the public folder path to your trinity templates, the default is 
-		"trinity". This means that a request to /static.css becomes trinity/static.css
-	path: the path to your trinity folder. For example __dirname + "/trinity/". It has no
-		default.
-}
 
 # installation
 
