@@ -12,6 +12,8 @@ Heavy work in progress!
 
 # Example
 
+[Simple example][3]
+
 	// base.html
 	<div>
 	  <p> Some content </p>
@@ -28,8 +30,8 @@ Heavy work in progress!
 	}
 
 	// base.js
-	var p = frag.getElementsByClassName("container")[0];
-	p.nodeValue = data.text;
+	var p = frag.firstChild.getElementsByClassName("container")[0];
+	p.textContent = data.text;
 	load("child", data, function (error, fragment) {
 		var div = frag.firstChild;
 		div.appendChild(fragment);
@@ -41,13 +43,20 @@ Heavy work in progress!
 	// child.js
 	frag.firstChild.textContent = "Another p that was loaded!";
 
-	// main.js
-	var trinity = require("trinity");
-	trinity.config("path", __dirname + "/public/trinity/");
+	// server.js
+	var express = require("express"),
+		trinity = require("../../src/trinity.js");
+
+	var app = express.createServer();
+
+	trinity.punchExpress();
+	trinity.set("path", __dirname + "/trinity/");
 
 	app.get("/", function (req, res) {
 		res.render("base", { text: "win" });
 	});
+
+	app.listen(8080);
 
 # Motivation
 
@@ -107,11 +116,27 @@ You can configure some variables.
 			default.
 	}
 
+## trinity.punchExpress
+
+duck punches express by overwriting res.render to use trinity.
+
+The default behaviour is to load the trinity with the uri and json you pass. And append the document fragment returned from the trinity to the body.
+
+Only works nicely if static.html defines a `<body></body>` and all your trinities don't define `<body></body>`
+
 ## trinity.load (Experts only)
 
 You can call the load function directly. Note this means that the CSS doesn't get appended anywhere and that the document fragment has a generic default document as ownerDocument.
 
 Should only be used with HTML & JS. You also have to call adoptNode on the entire document fragment to get it into the correct document.
+
+## trinity.Loader (Experts only)
+
+The Loader object, have fun duck punching it
+
+## trinity.Trinity (Experts only)
+
+The Trinity object, have fun duck punching it
 
 # installation
 
@@ -129,3 +154,4 @@ Should only be used with HTML & JS. You also have to call adoptNode on the entir
 
   [1]: http://en.wikipedia.org/wiki/Separation_of_concerns
   [2]: https://github.com/flatiron/plates
+  [3]: https://github.com/Raynos/trinity/tree/master/examples/simple

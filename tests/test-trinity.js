@@ -1,3 +1,6 @@
+var express = require("express"),
+	http = require("http");
+
 var trinity = require("../src/trinity.js");
 trinity.set("path", __dirname + "trinity/");
 
@@ -29,8 +32,8 @@ module.exports = {
 			var doc = docfrag.ownerDocument;
 			var children = [].slice.call(doc.head.childNodes);
 			test.ok(children.some(function (node) {
-				return node.tagName === "STYLE" &&
-					node.src === "other/static.css";
+				return node.tagName === "LINK" &&
+					node.href === "other/static.css";
 			}));
 			trinity.set("publicPath", "trinity");
 			test.done();
@@ -79,8 +82,8 @@ module.exports = {
 			test.ok(doc.head);
 			var children = [].slice.call(doc.head.childNodes);
 			test.ok(children.some(function (node) {
-				return node.tagName === "STYLE" &&
-					node.src === "trinity/static.css";
+				return node.tagName === "LINK" &&
+					node.href === "trinity/static.css";
 			}));
 			test.done();
 		});
@@ -164,6 +167,34 @@ module.exports = {
 			test.ok(docfrag.firstChild);
 			test.ok(docfrag.childNodes[1].tagName === "DIV");
 			test.done();
+		});
+	},
+	"use trinity with express": function (test) {
+		test.expect(3);
+		var app = express.createServer();
+		trinity.punchExpress();
+		app.get("/", function (req, res) {
+			res.render("test", { "baz": "works"});
+		});
+		app.listen(8080);
+		http.get({
+			host: "localhost",
+			port: 8080,
+			path: "/"
+		}, function _win(res) {
+			var html = "";
+			res.on("data", function (data) {
+				html += data;
+			});
+			res.on("end", function () {
+				test.ok(html.indexOf("color: blue;") !== -1);
+				test.ok(html.indexOf("Hello world") !== -1);
+				test.ok(html.indexOf("works") !== -1);
+				test.done();
+				app.close();
+			});
+		}, function _fail(err) {
+			console.log("fail", err);
 		});
 	}
 };

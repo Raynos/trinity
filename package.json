@@ -1,13 +1,14 @@
 {
 	"name": "trinity",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"author": "Jake Verbaten <raynos2@gmail.com>",
 	"main": "src/trinity",
 	"dependencies": {
 		"jsdom": "0.2.9"
 	},
 	"devDependencies": {
-		"nodeunit": "0.6.2"
+		"nodeunit": "0.6.2",
+		"express": "2.5.1"
 	},
 	"engines": {
 		"node": "0.6.x"
