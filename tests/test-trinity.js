@@ -145,5 +145,16 @@ module.exports = {
 				test.done();
 			});
 		})
+	},
+	"test nested load call": function (test) {
+		test.expect(4);
+		trinity("nested", { "bar": "baz"}, function (error, docfrag, load) {
+			var div = docfrag.firstChild;
+			test.ok(div.className === "baz");
+			test.ok(div);
+			test.ok(div.firstChild);
+			test.ok(div.firstChild.textContent === " simple ");
+			test.done();
+		});
 	}
 };

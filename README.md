@@ -22,10 +22,8 @@ Heavy work in progress!
 	}
 
 	// base.js
-	module.exports = function (domFragment, data, trinity) {
-		var p = domFragment.getElementsByClassName("container")[0];
-		p.nodeValue = data.text;
-	};
+	var p = frag.getElementsByClassName("container")[0];
+	p.nodeValue = data.text;
 
 	// main.js
 	var trinity = require("trinity");
@@ -54,9 +52,11 @@ It creates a Document based on Static.x
 
 It will then load the HTML at the uri as a fragment and pass it to the JS at the uri.
 
-The javascript file at the uri takes a format of 
+The javascript file at the uri get's 3 "globals" injected into it. `frag`, `data` and `load`
 
-`module.exports = function (domFragment, data, load) { };`
+The CSS file at the uri is string appended to a single CSS node in <head>.
+
+The cb is of format `(error, domFragment, load)`
 
 ## load(uri, data, cb)
 

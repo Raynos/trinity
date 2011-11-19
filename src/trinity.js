@@ -10,6 +10,23 @@ var config = {
 var bodyRegExp = /\{(.+?)\}+$/;
 
 
+var adoptNode = (function () {
+	function setOwnerDocument(node, doc) {
+		node._ownerDocument = doc;
+		node._attributes._ownerDocument = doc;
+		[].forEach.call(node.childNodes, function (node) {
+			setOwnerDocument(node, doc);
+		});
+	}
+
+	function adoptNode(node, doc) {
+		node.parentNode = null;
+		setOwnerDocument(node, doc);
+	}
+
+	return adoptNode;
+}());
+
 
 var Loader = {
 	loadJavaScript: function _loadJavaScript(uri, cb) {
@@ -17,12 +34,8 @@ var Loader = {
 
 		function readFile(err, file) {
 			if (err) return cb(err);
-			var module = { exports: {} };
-			var sandbox = {};
-			sandbox.exports = module.exports;
-			sandbox.module = module;
-			vm.runInNewContext(file, sandbox, path)
-			cb(null, module.exports);
+			var f = Function("frag", "data", "load", file);
+			cb(null, f);
 		}
 
 		fs.readFile(path, readFile);
@@ -40,33 +53,60 @@ var Loader = {
 	
 		fs.readFile(config.path + uri + ".html", readFile);
 	},
-	load: function _load(uri, json, cb) {
-		var count = 2,
-			_load = load.bind(null, this.doc, this.cssNode),
-			that = this;
+	make: function _make(doc, cssNode) {
+		var l = Object.create(Loader);
+		l.doc = doc;
+		l.cssNode = cssNode;
+		return l;
+	},
+	load: function _load(uri, json, cb, out) {
+		var that = this,
+			loader = Loader.make(this.doc, this.cssNode),
+			_load = loader.load.bind(loader),
+			count = 2;
+
+		function next() {
+			--count;
+			if (count === 0) {
+				cb(null, that.frag, _load);
+				out && out();
+			}
+		}
 
 		function handleFrag(error, obj) {
 			that.frag = obj;
-			if (error) return cb(error);
-			obj._ownerDocument = that.doc;
-			obj.parentNode = null;
+			if (error) {
+				return cb(error);
+			}
+			adoptNode(obj, that.doc);
 			that.loadJavaScript(uri, function (err, func) {
 				if (err && err.message.indexOf("No such file") === -1) {
-					cb(err);
+					return cb(err);
 				}
-				func && func(that.frag, json, _load);
-				--count === 0 && cb(null, that.frag, _load);	
+				if (func) {
+					var loadCalled = false;
+					func(that.frag, json, function (uri, data, cb) {
+						loadCalled = true;
+						loader.load(uri, data, cb, next);
+					});
+					if (!loadCalled) {
+						next();
+					}
+				} else {
+					next();
+				}
 			});
 		}
 
 		function readCSS(err, css) {
+			that.count--;
 			if (err && err.message.indexOf("No such file") === -1) {
-				cb(err);
+				return cb(error);
 			}
 			if (css) {
 				that.cssNode.textContent += css;	
-			} 
-			--count === 0 && cb(null, that.frag, _load);
+			}
+			next();
 		}
 		
 		// load html into fragment
@@ -112,21 +152,13 @@ var Trinity = {
 
 			that.addEmptyCSSNode();
 
-			load(that.doc, that.cssNode, uri, json, cb);
+			Loader.make(that.doc, that.cssNode).load(uri, json, cb);
 		}
 
 		// load static.html
 		jsdom.env(config.path + config.static + ".html", handlEnv);
 	}
 };
-
-function load(doc, cssNode, uri, json, cb) {
-	var l = Object.create(Loader);
-	l.doc = doc;
-	l.cssNode = cssNode;
-
-	l.load(uri, json, cb);
-}
 
 function trinity(module, json, cb) {
 	var doc; 
