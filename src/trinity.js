@@ -19,7 +19,7 @@ var adoptNode = (function () {
 	function setOwnerDocument(node, doc) {
 		node._ownerDocument = doc;
 		node._attributes._ownerDocument = doc;
-		[].forEach.call(node.childNodes, function (node) {
+		[].slice.call(node.childNodes).forEach(function (node) {
 			setOwnerDocument(node, doc);
 		});
 	}
@@ -134,7 +134,7 @@ var Trinity = {
 			if (!that.doc) that.doc = doc;
 
 			var fragment = doc.createDocumentFragment();
-			[].forEach.call(doc.childNodes, function (node) {
+			[].slice.call(doc.childNodes).forEach(function (node) {
 				fragment.appendChild(node);
 			});
 			adoptNode(fragment, that.doc);
@@ -405,10 +405,14 @@ trinity.set = function _set(name, val) {
 	config[name] = val;
 };
 
+/*
+	punch express by overwriting `res.render` to use Trinity
+*/
 trinity.punchExpress = function _punchExpress() {
 	http.ServerResponse.prototype.render = function _render(uri, json) {
 		var that = this;
 		trinity(uri, json, function (error, frag) {
+			if (error) throw error;
 			var doc = frag.ownerDocument;
 			doc.body.appendChild(frag);
 			that.send(doc.innerHTML);
