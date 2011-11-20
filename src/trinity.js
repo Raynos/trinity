@@ -6,7 +6,7 @@ var jsdom = require("jsdom"),
 
 var config = {
 	"static": "static",
-	"publicPath": "trinity"
+	"publicPath": "/trinity"
 };
 
 /*
