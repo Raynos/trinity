@@ -137,17 +137,11 @@ The default behaviour is to load the trinity with the uri and json you pass. And
 
 Only works nicely if static.html defines a `<body></body>` and all your trinities don't define `<body></body>`
 
-## trinity.load (Experts only)
+## trinity.send(res, error, fragment)
 
-You can call the load function directly.
+Trinity has a default send function that's used in combination with express. By default it appends the rendered document fragment to the end of the body.
 
-## trinity.Statics (Experts only)
-
-The Statics object, have fun duck punching it
-
-## trinity.Trinity (Experts only)
-
-The Trinity object, have fun duck punching it
+Overwrite this function to have your own rendering logic
 
 # installation
 

@@ -406,17 +406,27 @@ trinity.set = function _set(name, val) {
 };
 
 /*
+	trinity's send method. This is used by the express layer.
+
+	Overwrite this to do your own sending logic
+
+	@param ServerResponse res - the http response
+	@param Error error - an error object
+	@param DocumentFragment frag - the document fragment that is being rendered
+*/
+trinity.send = function _send(res, error, frag) {
+	if (error) throw error;
+	var doc = frag.ownerDocument;
+	doc.body.appendChild(frag);
+	res.send(doc.innerHTML);
+}
+
+/*
 	punch express by overwriting `res.render` to use Trinity
 */
 trinity.punchExpress = function _punchExpress() {
 	http.ServerResponse.prototype.render = function _render(uri, json) {
-		var that = this;
-		trinity(uri, json, function (error, frag) {
-			if (error) throw error;
-			var doc = frag.ownerDocument;
-			doc.body.appendChild(frag);
-			that.send(doc.innerHTML);
-		});
+		trinity(uri, json, trinity.send.bind(null, this));
 	};
 }
 
