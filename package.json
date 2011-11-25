@@ -1,6 +1,6 @@
 {
 	"name": "trinity",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"author": "Jake Verbaten <raynos2@gmail.com>",
 	"main": "src/trinity",
 	"dependencies": {

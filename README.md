@@ -15,7 +15,7 @@ Heavy work in progress!
 
 Your HTML template
 
-	// base.html
+	// html/base.html
 	<div>
 	  <p> Some content </p>
 	  <p class="container"></p>
@@ -23,7 +23,7 @@ Your HTML template
 
 The associated CSS. This is a nice place to put your CSS, all the CSS will be minified for you
 
-	// base.css
+	// css/base.css
 	p {
 		color: blue
 	}
@@ -34,7 +34,7 @@ The associated CSS. This is a nice place to put your CSS, all the CSS will be mi
 
 Your view logic, using plain old DOM
 
-	// base.js
+	// js/base.js
 	var p = frag.firstChild.getElementsByClassName("container")[0];
 	p.textContent = data.text;
 	var fragment = load("child", data);
@@ -43,12 +43,12 @@ Your view logic, using plain old DOM
 
 Another HTML template, this is a small shell
 
-	// child.html
+	// html/child.html
 	<p></p>
 
 Another piece of view logic
 
-	// child.js
+	// js/child.js
 	frag.firstChild.textContent = "Another p that was loaded!";
 
 The express server

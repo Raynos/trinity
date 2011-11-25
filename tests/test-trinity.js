@@ -33,7 +33,7 @@ module.exports = {
 			var children = [].slice.call(doc.head.childNodes);
 			test.ok(children.some(function (node) {
 				return node.tagName === "LINK" &&
-					node.href === "other/static.css";
+					node.href === "other/css/static.css";
 			}));
 			trinity.set("publicPath", "trinity");
 			test.done();
@@ -83,7 +83,7 @@ module.exports = {
 			var children = [].slice.call(doc.head.childNodes);
 			test.ok(children.some(function (node) {
 				return node.tagName === "LINK" &&
-					node.href === "trinity/static.css";
+					node.href === "trinity/css/static.css";
 			}));
 			test.done();
 		});
@@ -95,7 +95,7 @@ module.exports = {
 			var children = [].slice.call(doc.body.childNodes);
 			test.ok(children.some(function (node) {
 				return node.tagName === "SCRIPT" &&
-					node.src === "trinity/static.js";
+					node.src === "trinity/js/static.js";
 			}));
 			test.done();
 		});

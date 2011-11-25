@@ -42,13 +42,18 @@ var cachedRead = (function () {
 	var cache = {};
 
 	function readFile(name, cb) {
-		var file = cache[name];
-		if (file) {
-			return cb(null, file);
+		var obj = cache[name];
+		if (!obj) {
+			cache[name] = {};
+		} else if (obj.file) {
+			return cb(null, obj.file);
+		} else if (obj.err) {
+			return cb(obj.err);
 		}
 
 		fs.readFile(name, function (err, file) {
-			if (file) cache[name] = file;
+			if (file) cache[name].file = file;
+			if (err) cache[name].err = err;
 			cb.apply(this, arguments);
 		});
 	}
@@ -65,10 +70,8 @@ var Trinity = {
 
 		@param String uri - trinity to load
 		@param Function cb<Error> - callback to fire when finished
-		@param optional Boolean sync - sync flag as to whether 
-			the operation should be	synchronous
 	*/
-	create: function _create(uri, cb, sync) {
+	create: function _create(uri, cb) {
 		var count = 3;
 
 		function next() {
@@ -87,23 +90,21 @@ var Trinity = {
 			next();
 		}
 
-		this.createJavaScript(uri, swallowFileDoesNotExist, sync)
+		this.createJavaScript(uri, swallowFileDoesNotExist)
 		
-		this.createDocumentFragment(uri, errorHandler, sync);
+		this.createDocumentFragment(uri, errorHandler);
 
-		this.createCSS(uri, swallowFileDoesNotExist, sync);
+		this.createCSS(uri, swallowFileDoesNotExist);
 	},
 	/*
 		adds the css text to the cssNode
 
 		@param String uri - file to load
 		@param Function cb<Error, CSSText> - callback to fire when finished
-		@param optional Boolean sync - sync flag as to whether 
-			the operation should be	synchronous
 	*/
-	createCSS: function _createCSS(uri, cb, sync) {
+	createCSS: function _createCSS(uri, cb) {
 		var that = this,
-			url = path.join(config.path,uri) + ".css";
+			url = path.join(config.path, "css", uri) + ".css";
 
 		function readFile(error, file) {
 			if (error) return cb(error);
@@ -112,7 +113,7 @@ var Trinity = {
 			cb(null, file);
 		}
 
-		this.readFile(url, readFile, sync);
+		this.readFile(url, readFile);
 	},
 	/*
 		creates a document fragment from the html at the ui
@@ -120,12 +121,10 @@ var Trinity = {
 		@param String uri - file to load
 		@param Function cb<Error, DocumentFragment> - callback to fire 
 			when loaded. Get's passed the document fragment build from the HTML
-		@param optional Boolean sync - sync flag as to whether 
-			the operation should be	synchronous
 	*/
-	createDocumentFragment: function _createDocumentFragment(uri, cb, sync) {
+	createDocumentFragment: function _createDocumentFragment(uri, cb) {
 		var that = this,
-			url = path.join(config.path, uri) + ".html";
+			url = path.join(config.path, "html", uri) + ".html";
 
 		function readFile(error, file) {
 			if (error) return cb(error);
@@ -140,11 +139,11 @@ var Trinity = {
 			adoptNode(fragment, that.doc);
 
 			that.frag = fragment;
-
+			
 			cb(null, fragment);
 		}
 
-		this.readFile(url, readFile, sync);
+		this.readFile(url, readFile);
 	},
 	/*
 		loads the javascript file at the uri
@@ -152,12 +151,10 @@ var Trinity = {
 		@param String uri - file to load
 		@param Function cb<Error, Function> - callback to fire when loaded. 
 			get's passed the function f created	from the files source code
-		@param optional Boolean sync - sync flag as to whether 
-			the operation should be	synchronous
 	*/
-	createJavaScript: function _loadJavaScript(uri, cb, sync) {
+	createJavaScript: function _loadJavaScript(uri, cb) {
 		var that = this,
-			url = path.join(config.path, uri) + ".js";
+			url = path.join(config.path, "js", uri) + ".js";
 		
 		function readFile(err, file) {
 			if (err) return cb(err);
@@ -170,7 +167,7 @@ var Trinity = {
 			});			
 		}
 
-		this.readFile(url, readFile, sync);
+		this.readFile(url, readFile);
 	},
 	/*
 		Make a new Trinity
@@ -204,13 +201,14 @@ var Trinity = {
 				node.label() === "load"
 			) {
 				var module = node.value[1][0][1];
+
 				modules.push(module);
 			}
 		});
 
 		var count = modules.length * 3 + 1;
 
-		function next() {
+		function next(err) {
 			count--;
 			count === 0 && cb();
 		}
@@ -224,10 +222,12 @@ var Trinity = {
 		}
 
 		modules.forEach(function (module) {
-			var url = path.join(config.path, module);
-			cachedRead(url + ".js", recurseForJavaScript);
-			cachedRead(url + ".css", next);
-			cachedRead(url + ".html", next);
+			var jsurl = path.join(config.path, "js", module);
+			var cssurl = path.join(config.path, "css", module);
+			var htmlurl = path.join(config.path, "html", module);
+			cachedRead(jsurl + ".js", recurseForJavaScript);
+			cachedRead(cssurl + ".css", next);
+			cachedRead(htmlurl + ".html", next);
 		});
 
 		next();
@@ -237,20 +237,9 @@ var Trinity = {
 
 		@param String url - url to read
 		@param Function cb<Error, File> - callback to fire on reading
-		@param Boolean sync - whether to use sync method
 	*/
-	readFile: function _readFile(url, cb, sync) {
-		if (!sync) {
-			cachedRead(url, cb);
-		} else {
-			var file, err = null;
-			try {
-				file = fs.readFileSync(url);
-			} catch (e) {
-				err = e;
-			}
-			cb(err, file);
-		}
+	readFile: function _readFile(url, cb) {
+		cachedRead(url, cb);
 	}
 };
 
@@ -264,10 +253,8 @@ var Trinity = {
 	@param Function cb<Error, DocumentFragment, Function> -
 		callback to invoke when ready, passes the document fragment
 		and another load function to invoke
-	@param optional Boolean sync - sync flag as to whether 
-			the operation should be	synchronous
 */
-function load(doc, cssNode, uri, json, cb, sync) {
+function load(doc, cssNode, uri, json, cb) {
 	var that = this,
 		trinity = Trinity.make(doc, cssNode),
 		_load = load.bind(null, doc, cssNode),
@@ -293,14 +280,14 @@ function load(doc, cssNode, uri, json, cb, sync) {
 			var ret;
 			_load(uri, json, function _callbackProxy(err, frag) {
 				ret = frag;
-			}, true);
+			});
 			return ret;
 		});
 
 		cb(null, trinity.frag, _load);	
 	}
 
-	trinity.create(uri, next, sync);
+	trinity.create(uri, next);
 }
 
 	
@@ -314,7 +301,7 @@ var Statics = {
 	addStaticCSS: function _addStaticCSS() {
 		var link = this.doc.createElement("link");
 		link.rel = "stylesheet";
-		link.href = config.publicPath + "/" + config.static + ".css";
+		link.href = path.join(config.publicPath, "css", config.static) + ".css";
 		this.doc.head.appendChild(link);
 	}, 
 	/*
@@ -323,7 +310,7 @@ var Statics = {
 	addStaticJS: function _addStaticJS() {
 		var script = this.doc.createElement("script");
 		script.type = "text/javascript";
-		script.src = config.publicPath + "/" + config.static + ".js";
+		script.src = path.join(config.publicPath, "js", config.static) + ".js";
 		this.doc.body.appendChild(script);	
 	},
 	/*
@@ -366,7 +353,7 @@ var Statics = {
 		}
 
 		// load static.html
-		jsdom.env(config.path + config.static + ".html", handlEnv);
+		jsdom.env(config.path + "/html/" + config.static + ".html", handlEnv);
 	}
 };
 
