@@ -13,6 +13,8 @@ Heavy work in progress!
 
 [Simple example][3]
 
+[More complete examples][4]
+
 Your HTML template
 
 	// html/base.html
@@ -160,3 +162,4 @@ Overwrite this function to have your own rendering logic
   [1]: http://en.wikipedia.org/wiki/Separation_of_concerns
   [2]: https://github.com/flatiron/plates
   [3]: https://github.com/Raynos/trinity/tree/master/examples/simple
+  [4]: https://github.com/Raynos/raynos-blog/tree/master/src/public/trinity
