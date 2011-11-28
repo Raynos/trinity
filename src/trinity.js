@@ -196,6 +196,8 @@ var Trinity = {
 		var that = this,
 			modules = [];
 
+		if (this.preloaded[file]) return cb();
+
 		burrito(file, function (node) {
 			if (node.name === "call" &&
 				node.label() === "load"
@@ -210,7 +212,10 @@ var Trinity = {
 
 		function next(err) {
 			count--;
-			count === 0 && cb();
+			if (count === 0) {
+				that.preloaded[file] = true;
+				cb();
+			}
 		}
 
 		function recurseForJavaScript(err, file) {
@@ -232,6 +237,7 @@ var Trinity = {
 
 		next();
 	},
+	preloaded: [],
 	/*
 		readFile Utility
 
