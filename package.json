@@ -1,10 +1,10 @@
 {
 	"name": "trinity",
-	"version": "0.1.7",
+	"version": "0.1.8",
 	"author": "Jake Verbaten <raynos2@gmail.com>",
 	"main": "src/trinity",
 	"dependencies": {
-		"jsdom": "0.2.9",
+		"jsdom": "0.2.10",
 		"burrito": "0.2.11"
 	},
 	"devDependencies": {
