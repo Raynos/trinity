@@ -71,7 +71,7 @@ module.exports = {
 		test.expect(2);
 		trinity("notexist", {}, function (error, docfrag, load) {
 			test.ok(error);
-			test.ok(error.message.indexOf("No such file") > -1);
+			test.ok(error.message.indexOf("no such file") > -1);
 			test.done();
 		});
 	},

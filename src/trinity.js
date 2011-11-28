@@ -84,7 +84,7 @@ var Trinity = {
 		}
 
 		function swallowFileDoesNotExist(err, func) {
-			if (err && err.message.indexOf("No such file") === -1) {
+			if (err && err.message.indexOf("no such file") === -1) {
 				return cb(err);
 			}
 			next();
