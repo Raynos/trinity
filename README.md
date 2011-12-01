@@ -4,6 +4,8 @@ A simple templating mechanism, that keeps the purity of HTML, CSS & JS.
 
 Heavy work in progress!
 
+## Status: alpha
+
 ## RoadMap:
 
 - client support
